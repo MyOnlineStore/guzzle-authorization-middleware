@@ -18,15 +18,24 @@ final class CachedToken implements TokenManagerInterface
      */
     private $innerTokenManager;
 
-    public function __construct(CacheItemPoolInterface $cachePool, TokenManagerInterface $innerTokenManager)
-    {
+    /**
+     * @var UriProviderInterface
+     */
+    private $uriProvider;
+
+    public function __construct(
+        CacheItemPoolInterface $cachePool,
+        TokenManagerInterface $innerTokenManager,
+        UriProviderInterface $uriProvider
+    ) {
         $this->cachePool = $cachePool;
         $this->innerTokenManager = $innerTokenManager;
+        $this->uriProvider = $uriProvider;
     }
 
     public function getToken(): Token
     {
-        $item = $this->cachePool->getItem(self::class);
+        $item = $this->cachePool->getItem(\sprintf('%s-%s', self::class, $this->uriProvider->getTokenUri()));
         $token = $item->get();
 
         if (!$token instanceof Token || $token->isExpired()) {

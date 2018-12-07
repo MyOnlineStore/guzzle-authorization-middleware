@@ -6,12 +6,19 @@ namespace MyOnlineStore\GuzzleAuthorizationMiddleware\Tests\TokenManager;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\Token;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\CachedToken;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\TokenManagerInterface;
+use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\UriProviderInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
+use Psr\Http\Message\UriInterface;
 
 final class CachedTokenTest extends TestCase
 {
+    /**
+     * @var CacheItemInterface
+     */
+    private $cacheItem;
+
     /**
      * @var CacheItemPoolInterface
      */
@@ -27,26 +34,45 @@ final class CachedTokenTest extends TestCase
      */
     private $innerTokenManager;
 
+    /**
+     * @var UriInterface
+     */
+    private $tokenUri;
+
+    /**
+     * @var UriProviderInterface
+     */
+    private $uriProvider;
+
     protected function setUp()
     {
         $this->cachedManager = new CachedToken(
             $this->cachePool = $this->createMock(CacheItemPoolInterface::class),
-            $this->innerTokenManager = $this->createMock(TokenManagerInterface::class)
+            $this->innerTokenManager = $this->createMock(TokenManagerInterface::class),
+            $this->uriProvider = $this->createMock(UriProviderInterface::class)
         );
+
+        $this->uriProvider->expects(self::once())
+            ->method('getTokenUri')
+            ->willReturn($this->tokenUri = $this->createMock(UriInterface::class));
+
+        $this->tokenUri->expects(self::once())
+            ->method('__toString')
+            ->willReturn('token-uri');
+
+        $this->cachePool->expects(self::once())
+            ->method('getItem')
+            ->with(CachedToken::class.'-token-uri')
+            ->willReturn($this->cacheItem = $this->createMock(CacheItemInterface::class));
     }
 
     public function testReturnsCachedTokenIfNotExpired()
     {
-        $this->cachePool->expects(self::once())
-            ->method('getItem')
-            ->with(CachedToken::class)
-            ->willReturn($item = $this->createMock(CacheItemInterface::class));
-
         $notExpired = new \DateTimeImmutable();
         $notExpired = $notExpired->add(new \DateInterval('PT30M'));
         $token = new Token('token', $notExpired);
 
-        $item->expects(self::once())
+        $this->cacheItem->expects(self::once())
             ->method('get')
             ->willReturn($token);
 
@@ -58,16 +84,11 @@ final class CachedTokenTest extends TestCase
 
     public function testQueriesInnerManagerIfTokenIsExpired()
     {
-        $this->cachePool->expects(self::once())
-            ->method('getItem')
-            ->with(CachedToken::class)
-            ->willReturn($item = $this->createMock(CacheItemInterface::class));
-
         $expired = new \DateTimeImmutable();
         $expired = $expired->sub(new \DateInterval('PT30M'));
         $token = new Token('token', $expired);
 
-        $item->expects(self::once())
+        $this->cacheItem->expects(self::once())
             ->method('get')
             ->willReturn($token);
 
@@ -75,29 +96,24 @@ final class CachedTokenTest extends TestCase
             ->method('getToken')
             ->willReturn($newToken = new Token('new-token'));
 
-        $item->expects(self::once())
+        $this->cacheItem->expects(self::once())
             ->method('set')
             ->with($newToken);
 
-        $item->expects(self::once())
+        $this->cacheItem->expects(self::once())
             ->method('expiresAt')
             ->with(null);
 
         $this->cachePool->expects(self::once())
             ->method('save')
-            ->with($item);
+            ->with($this->cacheItem);
 
         self::assertSame($newToken, $this->cachedManager->getToken());
     }
 
     public function testQueriesInnerManagerIfTokenNotFoundInCache()
     {
-        $this->cachePool->expects(self::once())
-            ->method('getItem')
-            ->with(CachedToken::class)
-            ->willReturn($item = $this->createMock(CacheItemInterface::class));
-
-        $item->expects(self::once())
+        $this->cacheItem->expects(self::once())
             ->method('get')
             ->willReturn(null);
 
@@ -105,17 +121,17 @@ final class CachedTokenTest extends TestCase
             ->method('getToken')
             ->willReturn($newToken = new Token('new-token'));
 
-        $item->expects(self::once())
+        $this->cacheItem->expects(self::once())
             ->method('set')
             ->with($newToken);
 
-        $item->expects(self::once())
+        $this->cacheItem->expects(self::once())
             ->method('expiresAt')
             ->with(null);
 
         $this->cachePool->expects(self::once())
             ->method('save')
-            ->with($item);
+            ->with($this->cacheItem);
 
         self::assertSame($newToken, $this->cachedManager->getToken());
     }
