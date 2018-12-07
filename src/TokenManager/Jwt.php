@@ -44,6 +44,8 @@ final class Jwt implements TokenManagerInterface
     }
 
     /**
+     * @return Token
+     *
      * @throws \InvalidArgumentException If the token is not a valid JWT
      * @throws \OutOfBoundsException     If the token does not have an exp claim
      */
