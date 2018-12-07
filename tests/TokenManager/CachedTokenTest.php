@@ -62,7 +62,7 @@ final class CachedTokenTest extends TestCase
 
         $this->cachePool->expects(self::once())
             ->method('getItem')
-            ->with(CachedToken::class.'-token-uri')
+            ->with(CachedToken::class.'-'.\sha1('token-uri'))
             ->willReturn($this->cacheItem = $this->createMock(CacheItemInterface::class));
     }
 

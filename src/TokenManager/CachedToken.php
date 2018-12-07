@@ -35,7 +35,13 @@ final class CachedToken implements TokenManagerInterface
 
     public function getToken(): Token
     {
-        $item = $this->cachePool->getItem(\sprintf('%s-%s', self::class, $this->uriProvider->getTokenUri()));
+        $item  = $this->cachePool->getItem(
+            \sprintf(
+                '%s-%s',
+                self::class,
+                \sha1((string) $this->uriProvider->getTokenUri())
+            )
+        );
         $token = $item->get();
 
         if (!$token instanceof Token || $token->isExpired()) {
