@@ -3,7 +3,7 @@
   "type": "library",
   "description": "Guzzle Authorization Middleware",
   "homepage": "https://github.com/MyOnlineStore/guzzle-authorization-middleware",
-  "license": "Proprietary",
+  "license": "proprietary",
   "autoload": {
     "psr-4": {
       "MyOnlineStore\\GuzzleAuthorizationMiddleware\\": "src/"
