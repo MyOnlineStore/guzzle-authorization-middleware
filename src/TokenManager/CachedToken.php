@@ -1,0 +1,58 @@
+<?php
+declare(strict_types=1);
+
+namespace MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager;
+
+use MyOnlineStore\GuzzleAuthorizationMiddleware\Token;
+use Psr\Cache\CacheItemPoolInterface;
+
+final class CachedToken implements TokenManagerInterface
+{
+    /**
+     * @var CacheItemPoolInterface
+     */
+    private $cachePool;
+
+    /**
+     * @var TokenManagerInterface
+     */
+    private $innerTokenManager;
+
+    /**
+     * @var UriProviderInterface
+     */
+    private $uriProvider;
+
+    public function __construct(
+        CacheItemPoolInterface $cachePool,
+        TokenManagerInterface $innerTokenManager,
+        UriProviderInterface $uriProvider
+    ) {
+        $this->cachePool = $cachePool;
+        $this->innerTokenManager = $innerTokenManager;
+        $this->uriProvider = $uriProvider;
+    }
+
+    public function getToken(): Token
+    {
+        $item  = $this->cachePool->getItem(
+            \sprintf(
+                '%s-%s',
+                self::class,
+                \sha1((string) $this->uriProvider->getTokenUri())
+            )
+        );
+        $token = $item->get();
+
+        if (!$token instanceof Token || $token->isExpired()) {
+            $token = $this->innerTokenManager->getToken();
+
+            $item->set($token);
+            $item->expiresAt($token->getExpiresAt());
+
+            $this->cachePool->save($item);
+        }
+
+        return $token;
+    }
+}
