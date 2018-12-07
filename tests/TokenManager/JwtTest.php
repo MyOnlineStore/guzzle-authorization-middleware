@@ -84,11 +84,6 @@ final class JwtTest extends TestCase
             ->willReturn($jwtToken = $this->createMock(JwtToken::class));
 
         $jwtToken->expects(self::once())
-            ->method('hasClaim')
-            ->with('exp')
-            ->willReturn(true);
-
-        $jwtToken->expects(self::once())
             ->method('getClaim')
             ->with('exp')
             ->willReturn($timestamp = 1544094154);
@@ -132,11 +127,13 @@ final class JwtTest extends TestCase
             ->willReturn($jwtToken = $this->createMock(JwtToken::class));
 
         $jwtToken->expects(self::once())
-            ->method('hasClaim')
+            ->method('getClaim')
             ->with('exp')
-            ->willReturn(false);
+            ->willThrowException(new \OutOfBoundsException());
 
-        self::assertEquals(new Token('access-token'), $this->jwtManager->getToken());
+        $this->expectException(\OutOfBoundsException::class);
+
+        $this->jwtManager->getToken();
     }
 
     public function testCatchesGuzzleException()

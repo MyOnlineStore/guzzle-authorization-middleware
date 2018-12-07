@@ -11,11 +11,11 @@ final class Token
     private $token;
 
     /**
-     * @var \DateTimeImmutable|null
+     * @var \DateTimeImmutable
      */
     private $expiresAt;
 
-    public function __construct(string $token, \DateTimeImmutable $expiresAt = null)
+    public function __construct(string $token, \DateTimeImmutable $expiresAt)
     {
         $this->token = $token;
         $this->expiresAt = $expiresAt;
@@ -26,20 +26,13 @@ final class Token
         return $this->token;
     }
 
-    /**
-     * @return \DateTimeImmutable|null
-     */
-    public function getExpiresAt()
+    public function getExpiresAt(): \DateTimeImmutable
     {
         return $this->expiresAt;
     }
 
     public function isExpired(): bool
     {
-        if (null === $this->expiresAt) {
-            return false;
-        }
-
         return (new \DateTimeImmutable()) > $this->expiresAt;
     }
 

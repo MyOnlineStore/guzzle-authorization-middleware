@@ -8,20 +8,13 @@ use PHPUnit\Framework\TestCase;
 
 final class TokenTest extends TestCase
 {
-    public function testWithoutExpiresAt()
-    {
-        $token = new Token('token');
-
-        self::assertEquals('token', $token->getToken());
-        self::assertNull($token->getExpiresAt());
-        self::assertFalse($token->isExpired());
-    }
-
     public function testWithExpiresAt()
     {
         $expired = new \DateTimeImmutable();
         $expired = $expired->sub(new \DateInterval('PT30M'));
         $token = new Token('token', $expired);
+        self::assertEquals('token', $token->getToken());
+        self::assertEquals('token', (string) $token);
         self::assertSame($expired, $token->getExpiresAt());
         self::assertTrue($token->isExpired());
 

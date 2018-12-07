@@ -94,7 +94,7 @@ final class CachedTokenTest extends TestCase
 
         $this->innerTokenManager->expects(self::once())
             ->method('getToken')
-            ->willReturn($newToken = new Token('new-token'));
+            ->willReturn($newToken = new Token('new-token', $expiresAt = new \DateTimeImmutable()));
 
         $this->cacheItem->expects(self::once())
             ->method('set')
@@ -102,7 +102,7 @@ final class CachedTokenTest extends TestCase
 
         $this->cacheItem->expects(self::once())
             ->method('expiresAt')
-            ->with(null);
+            ->with($expiresAt);
 
         $this->cachePool->expects(self::once())
             ->method('save')
@@ -119,7 +119,7 @@ final class CachedTokenTest extends TestCase
 
         $this->innerTokenManager->expects(self::once())
             ->method('getToken')
-            ->willReturn($newToken = new Token('new-token'));
+            ->willReturn($newToken = new Token('new-token', $expiresAt = new \DateTimeImmutable()));
 
         $this->cacheItem->expects(self::once())
             ->method('set')
@@ -127,7 +127,7 @@ final class CachedTokenTest extends TestCase
 
         $this->cacheItem->expects(self::once())
             ->method('expiresAt')
-            ->with(null);
+            ->with($expiresAt);
 
         $this->cachePool->expects(self::once())
             ->method('save')

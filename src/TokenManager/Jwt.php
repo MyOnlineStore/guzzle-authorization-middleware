@@ -43,6 +43,10 @@ final class Jwt implements TokenManagerInterface
         $this->jwtParser = $jwtParser;
     }
 
+    /**
+     * @throws \InvalidArgumentException If the token is not a valid JWT
+     * @throws \OutOfBoundsException     If the token does not have an exp claim
+     */
     public function getToken(): Token
     {
         $token = '';
@@ -59,13 +63,9 @@ final class Jwt implements TokenManagerInterface
         } catch (GuzzleException $exception) {
         }
 
-        $expiresAt = null;
-        $jwtToken = $this->jwtParser->parse($token);
-
-        if ($jwtToken->hasClaim('exp')) {
-            $expiresAt = (new \DateTimeImmutable())->setTimestamp($jwtToken->getClaim('exp'));
-        }
-
-        return new Token($token, $expiresAt);
+        return new Token(
+            $token,
+            (new \DateTimeImmutable())->setTimestamp($this->jwtParser->parse($token)->getClaim('exp'))
+        );
     }
 }

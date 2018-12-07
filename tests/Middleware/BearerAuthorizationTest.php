@@ -36,7 +36,7 @@ final class BearerAuthorizationTest extends TestCase
 
         $this->tokenManager->expects(self::once())
             ->method('getToken')
-            ->willReturn(new Token('auth-token'));
+            ->willReturn(new Token('auth-token', new \DateTimeImmutable()));
 
         $request->expects(self::once())
             ->method('withHeader')
