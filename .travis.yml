@@ -7,8 +7,13 @@ matrix:
         - php: 7.2
 
 install:
-    - composer install --prefer-source
-
-before_script:
     - composer self-update
     - composer install --prefer-source
+    - composer require php-coveralls/php-coveralls
+
+script:
+    - vendor/bin/phpunit --colors=always --coverage-clover clover.xml
+    - vendor/bin/phpcs
+
+after_script:
+    - vendor/bin/php-coveralls -v
