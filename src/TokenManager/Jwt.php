@@ -23,7 +23,9 @@ final class Jwt implements TokenManagerInterface
      */
     private $jwtParser;
 
-    /** @var LoggerInterface */
+    /**
+     * @var LoggerInterface
+     */
     private $logger;
 
     /**
