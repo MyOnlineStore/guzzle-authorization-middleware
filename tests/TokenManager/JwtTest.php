@@ -16,6 +16,7 @@ use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
 use Psr\Http\Message\UriInterface;
+use Psr\Log\LoggerInterface;
 
 final class JwtTest extends TestCase
 {
@@ -35,6 +36,11 @@ final class JwtTest extends TestCase
     private $jwtParser;
 
     /**
+     * @var LoggerInterface
+     */
+    private $logger;
+
+    /**
      * @var RequestFactoryInterface
      */
     private $requestFactory;
@@ -50,7 +56,8 @@ final class JwtTest extends TestCase
             $this->httpClient = $this->createMock(ClientInterface::class),
             $this->jwtParser = $this->createMock(Parser::class),
             $this->requestFactory = $this->createMock(RequestFactoryInterface::class),
-            $this->uriProvider = $this->createMock(UriProviderInterface::class)
+            $this->uriProvider = $this->createMock(UriProviderInterface::class),
+            $this->logger = $this->createMock(LoggerInterface::class)
         );
     }
 
@@ -151,6 +158,10 @@ final class JwtTest extends TestCase
             ->method('send')
             ->with($request)
             ->willThrowException(new TransferException());
+
+        $this->logger->expects(self::once())
+            ->method('critical')
+            ->with('Unable to fetch JWT token', self::isType('array'));
 
         $this->jwtParser->expects(self::once())
             ->method('parse')

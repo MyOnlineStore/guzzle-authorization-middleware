@@ -8,6 +8,8 @@ use GuzzleHttp\Exception\GuzzleException;
 use Lcobucci\JWT\Parser;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\Token;
 use Psr\Http\Message\RequestFactoryInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 final class Jwt implements TokenManagerInterface
 {
@@ -20,6 +22,11 @@ final class Jwt implements TokenManagerInterface
      * @var Parser
      */
     private $jwtParser;
+
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
     /**
      * @var RequestFactoryInterface
@@ -35,17 +42,17 @@ final class Jwt implements TokenManagerInterface
         ClientInterface $httpClient,
         Parser $jwtParser,
         RequestFactoryInterface $requestFactory,
-        UriProviderInterface $uriProvider
+        UriProviderInterface $uriProvider,
+        LoggerInterface $logger = null
     ) {
         $this->httpClient = $httpClient;
         $this->requestFactory = $requestFactory;
         $this->uriProvider = $uriProvider;
         $this->jwtParser = $jwtParser;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**
-     * @return Token
-     *
      * @throws \InvalidArgumentException If the token is not a valid JWT
      * @throws \OutOfBoundsException     If the token does not have an exp claim
      */
@@ -63,6 +70,14 @@ final class Jwt implements TokenManagerInterface
 
             $token = \json_decode($response->getBody()->getContents(), true)['accessToken'] ?? '';
         } catch (GuzzleException $exception) {
+            $this->logger->critical(
+                'Unable to fetch JWT token',
+                [
+                    'message' => $exception->getMessage(),
+                    'previous' => $exception->getPrevious(),
+                    'trace' => $exception->getTraceAsString(),
+                ]
+            );
         }
 
         return new Token(
