@@ -6,33 +6,32 @@ namespace MyOnlineStore\GuzzleAuthorizationMiddleware\Tests\Middleware;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\Middleware\BearerAuthorization;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\Token;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\TokenManagerInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 
 final class BearerAuthorizationTest extends TestCase
 {
-    /**
-     * @var BearerAuthorization
-     */
+    /** @var BearerAuthorization */
     private $middleware;
 
-    /**
-     * @var TokenManagerInterface
-     */
+    /** @var TokenManagerInterface&MockObject */
     private $tokenManager;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->middleware = new BearerAuthorization(
             $this->tokenManager = $this->createMock(TokenManagerInterface::class)
         );
     }
 
-    public function testPassesRequestWithAuthorizationBearerHeader()
+    public function testPassesRequestWithAuthorizationBearerHeader(): void
     {
         $request = $this->createMock(RequestInterface::class);
-        $next = $this->createPartialMock(\stdClass::class, ['__invoke']);
         $options = [];
+        $next = static function (): \stdClass {
+            return new \stdClass();
+        };
 
         $this->tokenManager->expects(self::once())
             ->method('getToken')
@@ -43,11 +42,6 @@ final class BearerAuthorizationTest extends TestCase
             ->with('Authorization', 'bearer auth-token')
             ->willReturnSelf();
 
-        $next->expects(self::once())
-            ->method('__invoke')
-            ->with($request, $options)
-            ->willReturnSelf();
-
-        self::assertSame($next, ($this->middleware)($next)($request, $options));
+        ($this->middleware)($next)($request, $options);
     }
 }

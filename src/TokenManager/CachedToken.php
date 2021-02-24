@@ -5,22 +5,17 @@ namespace MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager;
 
 use MyOnlineStore\GuzzleAuthorizationMiddleware\Token;
 use Psr\Cache\CacheItemPoolInterface;
+use Psr\Cache\InvalidArgumentException;
 
 final class CachedToken implements TokenManagerInterface
 {
-    /**
-     * @var CacheItemPoolInterface
-     */
+    /** @var CacheItemPoolInterface */
     private $cachePool;
 
-    /**
-     * @var TokenManagerInterface
-     */
+    /** @var TokenManagerInterface */
     private $innerTokenManager;
 
-    /**
-     * @var UriProviderInterface
-     */
+    /** @var UriProviderInterface */
     private $uriProvider;
 
     public function __construct(
@@ -33,12 +28,14 @@ final class CachedToken implements TokenManagerInterface
         $this->uriProvider = $uriProvider;
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     public function getToken(): Token
     {
         $item  = $this->cachePool->getItem(
             \sprintf(
-                '%s-%s',
-                self::class,
+                'MyOnlineStore-GuzzleAuthorizationMiddleware-TokenManager-CachedToken-%s',
                 \sha1((string) $this->uriProvider->getTokenUri())
             )
         );

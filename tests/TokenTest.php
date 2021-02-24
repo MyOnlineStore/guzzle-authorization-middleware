@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 
 final class TokenTest extends TestCase
 {
-    public function testWithExpiresAt()
+    public function testWithExpiresAt(): void
     {
         $expired = new \DateTimeImmutable();
         $expired = $expired->sub(new \DateInterval('PT30M'));

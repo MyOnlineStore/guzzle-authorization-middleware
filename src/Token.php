@@ -5,14 +5,10 @@ namespace MyOnlineStore\GuzzleAuthorizationMiddleware;
 
 final class Token
 {
-    /**
-     * @var string
-     */
+    /** @var string */
     private $token;
 
-    /**
-     * @var \DateTimeImmutable
-     */
+    /** @var \DateTimeImmutable */
     private $expiresAt;
 
     public function __construct(string $token, \DateTimeImmutable $expiresAt)
