@@ -7,6 +7,7 @@ use MyOnlineStore\GuzzleAuthorizationMiddleware\Token;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\CachedToken;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\TokenManagerInterface;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\UriProviderInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
@@ -14,37 +15,25 @@ use Psr\Http\Message\UriInterface;
 
 final class CachedTokenTest extends TestCase
 {
-    /**
-     * @var CacheItemInterface
-     */
+    /** @var CacheItemInterface&MockObject */
     private $cacheItem;
 
-    /**
-     * @var CacheItemPoolInterface
-     */
+    /** @var CacheItemPoolInterface&MockObject */
     private $cachePool;
 
-    /**
-     * @var CachedToken
-     */
+    /** @var CachedToken */
     private $cachedManager;
 
-    /**
-     * @var TokenManagerInterface
-     */
+    /** @var TokenManagerInterface&MockObject */
     private $innerTokenManager;
 
-    /**
-     * @var UriInterface
-     */
+    /** @var UriInterface */
     private $tokenUri;
 
-    /**
-     * @var UriProviderInterface
-     */
+    /** @var UriProviderInterface&MockObject */
     private $uriProvider;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->cachedManager = new CachedToken(
             $this->cachePool = $this->createMock(CacheItemPoolInterface::class),
@@ -62,11 +51,11 @@ final class CachedTokenTest extends TestCase
 
         $this->cachePool->expects(self::once())
             ->method('getItem')
-            ->with(CachedToken::class.'-'.\sha1('token-uri'))
+            ->with(\str_replace('\\', '-', CachedToken::class) . '-' . \sha1('token-uri'))
             ->willReturn($this->cacheItem = $this->createMock(CacheItemInterface::class));
     }
 
-    public function testReturnsCachedTokenIfNotExpired()
+    public function testReturnsCachedTokenIfNotExpired(): void
     {
         $notExpired = new \DateTimeImmutable();
         $notExpired = $notExpired->add(new \DateInterval('PT30M'));
@@ -82,7 +71,7 @@ final class CachedTokenTest extends TestCase
         self::assertSame($token, $this->cachedManager->getToken());
     }
 
-    public function testQueriesInnerManagerIfTokenIsExpired()
+    public function testQueriesInnerManagerIfTokenIsExpired(): void
     {
         $expired = new \DateTimeImmutable();
         $expired = $expired->sub(new \DateInterval('PT30M'));
@@ -111,7 +100,7 @@ final class CachedTokenTest extends TestCase
         self::assertSame($newToken, $this->cachedManager->getToken());
     }
 
-    public function testQueriesInnerManagerIfTokenNotFoundInCache()
+    public function testQueriesInnerManagerIfTokenNotFoundInCache(): void
     {
         $this->cacheItem->expects(self::once())
             ->method('get')

@@ -7,9 +7,11 @@ use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\TransferException;
 use Lcobucci\JWT\Parser;
 use Lcobucci\JWT\Token as JwtToken;
+use Lcobucci\JWT\Token\DataSet;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\Token;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\Jwt;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\UriProviderInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\RequestInterface;
@@ -20,37 +22,25 @@ use Psr\Log\LoggerInterface;
 
 final class JwtTest extends TestCase
 {
-    /**
-     * @var ClientInterface
-     */
+    /** @var ClientInterface&MockObject */
     private $httpClient;
 
-    /**
-     * @var Jwt
-     */
+    /** @var Jwt */
     private $jwtManager;
 
-    /**
-     * @var Parser
-     */
+    /** @var Parser&MockObject */
     private $jwtParser;
 
-    /**
-     * @var LoggerInterface
-     */
+    /** @var LoggerInterface&MockObject */
     private $logger;
 
-    /**
-     * @var RequestFactoryInterface
-     */
+    /** @var RequestFactoryInterface&MockObject */
     private $requestFactory;
 
-    /**
-     * @var UriProviderInterface
-     */
+    /** @var UriProviderInterface&MockObject */
     private $uriProvider;
 
-    protected function setUp()
+    protected function setUp(): void
     {
         $this->jwtManager = new Jwt(
             $this->httpClient = $this->createMock(ClientInterface::class),
@@ -61,7 +51,7 @@ final class JwtTest extends TestCase
         );
     }
 
-    public function testGetToken()
+    public function testGetToken(): void
     {
         $this->uriProvider->expects(self::once())
             ->method('getTokenUri')
@@ -91,20 +81,13 @@ final class JwtTest extends TestCase
             ->willReturn($jwtToken = $this->createMock(JwtToken::class));
 
         $jwtToken->expects(self::once())
-            ->method('getClaim')
-            ->with('exp')
-            ->willReturn($timestamp = 1544094154);
+            ->method('claims')
+            ->willReturn(new DataSet(['exp' => $expiration = new \DateTimeImmutable()], 'json'));
 
-        self::assertEquals(
-            new Token(
-                'access-token',
-                (new \DateTimeImmutable())->setTimestamp($timestamp)
-            ),
-            $this->jwtManager->getToken()
-        );
+        self::assertEquals(new Token('access-token', $expiration), $this->jwtManager->getToken());
     }
 
-    public function testGetTokenWithoutExpiresAt()
+    public function testGetTokenWithoutExpiresAt(): void
     {
         $this->uriProvider->expects(self::once())
             ->method('getTokenUri')
@@ -134,16 +117,15 @@ final class JwtTest extends TestCase
             ->willReturn($jwtToken = $this->createMock(JwtToken::class));
 
         $jwtToken->expects(self::once())
-            ->method('getClaim')
-            ->with('exp')
-            ->willThrowException(new \OutOfBoundsException());
+            ->method('claims')
+            ->willReturn(new DataSet([], ''));
 
         $this->expectException(\OutOfBoundsException::class);
 
         $this->jwtManager->getToken();
     }
 
-    public function testCatchesGuzzleException()
+    public function testCatchesGuzzleException(): void
     {
         $this->uriProvider->expects(self::once())
             ->method('getTokenUri')

@@ -13,29 +13,19 @@ use Psr\Log\NullLogger;
 
 final class Jwt implements TokenManagerInterface
 {
-    /**
-     * @var ClientInterface
-     */
+    /** @var ClientInterface */
     private $httpClient;
 
-    /**
-     * @var Parser
-     */
+    /** @var Parser */
     private $jwtParser;
 
-    /**
-     * @var LoggerInterface
-     */
+    /** @var LoggerInterface */
     private $logger;
 
-    /**
-     * @var RequestFactoryInterface
-     */
+    /** @var RequestFactoryInterface */
     private $requestFactory;
 
-    /**
-     * @var UriProviderInterface
-     */
+    /** @var UriProviderInterface */
     private $uriProvider;
 
     public function __construct(
@@ -43,7 +33,7 @@ final class Jwt implements TokenManagerInterface
         Parser $jwtParser,
         RequestFactoryInterface $requestFactory,
         UriProviderInterface $uriProvider,
-        LoggerInterface $logger = null
+        ?LoggerInterface $logger = null
     ) {
         $this->httpClient = $httpClient;
         $this->requestFactory = $requestFactory;
@@ -53,8 +43,8 @@ final class Jwt implements TokenManagerInterface
     }
 
     /**
-     * @throws \InvalidArgumentException If the token is not a valid JWT
-     * @throws \OutOfBoundsException     If the token does not have an exp claim
+     * @throws \InvalidArgumentException
+     * @throws \OutOfBoundsException
      */
     public function getToken(): Token
     {
@@ -80,9 +70,12 @@ final class Jwt implements TokenManagerInterface
             );
         }
 
-        return new Token(
-            $token,
-            (new \DateTimeImmutable())->setTimestamp($this->jwtParser->parse($token)->getClaim('exp'))
-        );
+        $expiration = $this->jwtParser->parse($token)->claims()->get('exp');
+
+        if (!$expiration instanceof \DateTimeImmutable) {
+            throw new \OutOfBoundsException('JWT does not contain an expiration');
+        }
+
+        return new Token($token, $expiration);
     }
 }

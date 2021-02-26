@@ -8,9 +8,7 @@ use Psr\Http\Message\RequestInterface;
 
 final class BearerAuthorization
 {
-    /**
-     * @var TokenManagerInterface
-     */
+    /** @var TokenManagerInterface */
     private $tokenManager;
 
     public function __construct(TokenManagerInterface $tokenManager)
@@ -18,6 +16,11 @@ final class BearerAuthorization
         $this->tokenManager = $tokenManager;
     }
 
+    /**
+     * @param callable(RequestInterface, array): mixed $next
+     *
+     * @return callable(RequestInterface, array): mixed
+     */
     public function __invoke(callable $next): callable
     {
         return function (
@@ -27,7 +30,7 @@ final class BearerAuthorization
             return $next(
                 $request->withHeader(
                     'Authorization',
-                    \sprintf('bearer %s', $this->tokenManager->getToken())
+                    'bearer ' . $this->tokenManager->getToken()->__toString()
                 ),
                 $options
             );
