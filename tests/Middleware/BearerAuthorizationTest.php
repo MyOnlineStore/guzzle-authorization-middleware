@@ -8,7 +8,7 @@ use MyOnlineStore\GuzzleAuthorizationMiddleware\Token;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\TokenManagerInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
-use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\MessageInterface;
 
 final class BearerAuthorizationTest extends TestCase
 {
@@ -27,7 +27,7 @@ final class BearerAuthorizationTest extends TestCase
 
     public function testPassesRequestWithAuthorizationBearerHeader(): void
     {
-        $request = $this->createMock(RequestInterface::class);
+        $message = $this->createMock(MessageInterface::class);
         $options = [];
         $next = static function (): \stdClass {
             return new \stdClass();
@@ -37,11 +37,11 @@ final class BearerAuthorizationTest extends TestCase
             ->method('getToken')
             ->willReturn(new Token('auth-token', new \DateTimeImmutable()));
 
-        $request->expects(self::once())
+        $message->expects(self::once())
             ->method('withHeader')
             ->with('Authorization', 'bearer auth-token')
             ->willReturnSelf();
 
-        ($this->middleware)($next)($request, $options);
+        ($this->middleware)($next)($message, $options);
     }
 }
