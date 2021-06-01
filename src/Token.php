@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace MyOnlineStore\GuzzleAuthorizationMiddleware;
 
+/**
+ * @psalm-immutable
+ */
 final class Token
 {
     /** @var string */
@@ -30,6 +33,11 @@ final class Token
     public function isExpired(): bool
     {
         return (new \DateTimeImmutable()) > $this->expiresAt;
+    }
+
+    public function toString(): string
+    {
+        return $this->token;
     }
 
     public function __toString(): string

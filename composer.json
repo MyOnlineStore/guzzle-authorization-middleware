@@ -17,7 +17,7 @@
   "require": {
     "php": "^7.2",
     "ext-json": "*",
-    "guzzlehttp/guzzle": "^6.5",
+    "guzzlehttp/guzzle": "^6.5 || ^7.3",
     "lcobucci/jwt": "^3.4 || ^4.0",
     "psr/cache": "^1.0",
     "psr/http-factory": "^1.0",
@@ -25,10 +25,10 @@
     "psr/log": "^1.1"
   },
   "require-dev": {
-    "myonlinestore/coding-standard": "^3.0",
+    "myonlinestore/coding-standard": "^3.1",
     "phpunit/phpunit": "^8.5",
     "psalm/plugin-phpunit": "^0.15.1",
-    "vimeo/psalm": "^4.6"
+    "vimeo/psalm": "^4.7"
   },
   "config": {
     "vendor-dir": "vendor",

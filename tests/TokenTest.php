@@ -14,6 +14,7 @@ final class TokenTest extends TestCase
         $expired = $expired->sub(new \DateInterval('PT30M'));
         $token = new Token('token', $expired);
         self::assertEquals('token', $token->getToken());
+        self::assertEquals('token', $token->toString());
         self::assertEquals('token', (string) $token);
         self::assertSame($expired, $token->getExpiresAt());
         self::assertTrue($token->isExpired());

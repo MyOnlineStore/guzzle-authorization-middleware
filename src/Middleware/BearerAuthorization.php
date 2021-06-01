@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace MyOnlineStore\GuzzleAuthorizationMiddleware\Middleware;
 
 use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\TokenManagerInterface;
-use Psr\Http\Message\RequestInterface;
+use Psr\Http\Message\MessageInterface;
 
 final class BearerAuthorization
 {
@@ -17,20 +17,20 @@ final class BearerAuthorization
     }
 
     /**
-     * @param callable(RequestInterface, array): mixed $next
+     * @param callable(MessageInterface, array): mixed $next
      *
-     * @return callable(RequestInterface, array): mixed
+     * @return callable(MessageInterface, array): mixed
      */
     public function __invoke(callable $next): callable
     {
         return function (
-            RequestInterface $request,
+            MessageInterface $request,
             array $options = []
         ) use ($next) {
             return $next(
                 $request->withHeader(
                     'Authorization',
-                    'bearer ' . $this->tokenManager->getToken()->__toString()
+                    'bearer ' . $this->tokenManager->getToken()->toString()
                 ),
                 $options
             );
