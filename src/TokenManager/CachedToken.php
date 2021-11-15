@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager;
 
+use MyOnlineStore\GuzzleAuthorizationMiddleware\Exception\FailedToRetrieveToken;
+use MyOnlineStore\GuzzleAuthorizationMiddleware\Exception\FailedToRetrieveTokenUri;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\Token;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Cache\InvalidArgumentException;
@@ -29,17 +31,24 @@ final class CachedToken implements TokenManagerInterface
     }
 
     /**
-     * @throws InvalidArgumentException
+     * @throws FailedToRetrieveToken
      */
     public function getToken(): Token
     {
-        $item  = $this->cachePool->getItem(
-            \sprintf(
-                'MyOnlineStore-GuzzleAuthorizationMiddleware-TokenManager-CachedToken-%s',
-                \sha1((string) $this->uriProvider->getTokenUri())
-            )
-        );
+        /** @psalm-suppress InvalidCatch */
+        try {
+            $item = $this->cachePool->getItem(
+                \sprintf(
+                    'MyOnlineStore-GuzzleAuthorizationMiddleware-TokenManager-CachedToken-%s',
+                    \sha1((string) $this->uriProvider->getTokenUri())
+                )
+            );
+        } catch (FailedToRetrieveTokenUri | InvalidArgumentException $exception) {
+            throw FailedToRetrieveToken::dueTo('Unable to retrieve cache', $exception);
+        }
+
         $token = $item->get();
+        \assert($token instanceof Token || null === $token);
 
         if (!$token instanceof Token || $token->isExpired()) {
             $token = $this->innerTokenManager->getToken();

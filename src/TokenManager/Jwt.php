@@ -6,6 +6,8 @@ namespace MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
 use Lcobucci\JWT\Parser;
+use MyOnlineStore\GuzzleAuthorizationMiddleware\Exception\FailedToRetrieveToken;
+use MyOnlineStore\GuzzleAuthorizationMiddleware\Exception\FailedToRetrieveTokenUri;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\Token;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Log\LoggerInterface;
@@ -43,8 +45,7 @@ final class Jwt implements TokenManagerInterface
     }
 
     /**
-     * @throws \InvalidArgumentException
-     * @throws \OutOfBoundsException
+     * @throws FailedToRetrieveToken
      */
     public function getToken(): Token
     {
@@ -58,8 +59,8 @@ final class Jwt implements TokenManagerInterface
                 )
             );
 
-            $token = \json_decode($response->getBody()->getContents(), true)['accessToken'] ?? '';
-        } catch (GuzzleException $exception) {
+            $token = (string) (\json_decode($response->getBody()->getContents(), true)['accessToken'] ?? '');
+        } catch (FailedToRetrieveTokenUri | GuzzleException | \RuntimeException $exception) {
             $this->logger->critical(
                 'Unable to fetch JWT token',
                 [
@@ -70,10 +71,14 @@ final class Jwt implements TokenManagerInterface
             );
         }
 
-        $expiration = $this->jwtParser->parse($token)->claims()->get('exp');
+        try {
+            $expiration = $this->jwtParser->parse($token)->claims()->get('exp');
+        } catch (\RuntimeException $exception) {
+            throw FailedToRetrieveToken::dueTo('Unable to parse token', $exception);
+        }
 
         if (!$expiration instanceof \DateTimeImmutable) {
-            throw new \OutOfBoundsException('JWT does not contain an expiration');
+            throw FailedToRetrieveToken::dueTo('JWT does not contain an expiration');
         }
 
         return new Token($token, $expiration);
