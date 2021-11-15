@@ -3,17 +3,24 @@ declare(strict_types=1);
 
 namespace MyOnlineStore\GuzzleAuthorizationMiddleware\Middleware;
 
+use MyOnlineStore\GuzzleAuthorizationMiddleware\Exception\FailedToRetrieveToken;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\TokenManagerInterface;
 use Psr\Http\Message\MessageInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 final class BearerAuthorization
 {
+    /** @var LoggerInterface */
+    private $logger;
+
     /** @var TokenManagerInterface */
     private $tokenManager;
 
-    public function __construct(TokenManagerInterface $tokenManager)
+    public function __construct(TokenManagerInterface $tokenManager, ?LoggerInterface $logger = null)
     {
         $this->tokenManager = $tokenManager;
+        $this->logger = $logger ?? new NullLogger();
     }
 
     /**
@@ -27,13 +34,26 @@ final class BearerAuthorization
             MessageInterface $request,
             array $options = []
         ) use ($next) {
-            return $next(
-                $request->withHeader(
-                    'Authorization',
-                    'bearer ' . $this->tokenManager->getToken()->toString()
-                ),
-                $options
-            );
+            try {
+                return $next(
+                    $request->withHeader(
+                        'Authorization',
+                        'bearer ' . $this->tokenManager->getToken()->toString()
+                    ),
+                    $options
+                );
+            } catch (FailedToRetrieveToken $exception) {
+                $this->logger->critical(
+                    'Failed to add authorization header.',
+                    [
+                        'message' => $exception->getMessage(),
+                        'previous' => $exception->getPrevious(),
+                        'trace' => $exception->getTraceAsString(),
+                    ]
+                );
+            }
+
+            return $next($request, $options);
         };
     }
 }
