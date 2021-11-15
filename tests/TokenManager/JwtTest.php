@@ -8,6 +8,7 @@ use GuzzleHttp\Exception\TransferException;
 use Lcobucci\JWT\Parser;
 use Lcobucci\JWT\Token as JwtToken;
 use Lcobucci\JWT\Token\DataSet;
+use MyOnlineStore\GuzzleAuthorizationMiddleware\Exception\FailedToRetrieveToken;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\Token;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\Jwt;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\UriProviderInterface;
@@ -120,7 +121,7 @@ final class JwtTest extends TestCase
             ->method('claims')
             ->willReturn(new DataSet([], ''));
 
-        $this->expectException(\OutOfBoundsException::class);
+        $this->expectException(FailedToRetrieveToken::class);
 
         $this->jwtManager->getToken();
     }
@@ -151,6 +152,40 @@ final class JwtTest extends TestCase
             ->willThrowException(new \InvalidArgumentException());
 
         $this->expectException(\InvalidArgumentException::class);
+
+        $this->jwtManager->getToken();
+    }
+
+    public function testCatchesParseException(): void
+    {
+        $this->uriProvider->expects(self::once())
+            ->method('getTokenUri')
+            ->willReturn($tokenUri = $this->createMock(UriInterface::class));
+
+        $this->requestFactory->expects(self::once())
+            ->method('createRequest')
+            ->with('GET', $tokenUri)
+            ->willReturn($request = $this->createMock(RequestInterface::class));
+
+        $this->httpClient->expects(self::once())
+            ->method('send')
+            ->with($request)
+            ->willReturn($response = $this->createMock(ResponseInterface::class));
+
+        $response->expects(self::once())
+            ->method('getBody')
+            ->willReturn($stream = $this->createMock(StreamInterface::class));
+
+        $stream->expects(self::once())
+            ->method('getContents')
+            ->willReturn('{"accessToken":"access-token"}');
+
+        $this->jwtParser->expects(self::once())
+            ->method('parse')
+            ->with('access-token')
+            ->willThrowException(new \RuntimeException());
+
+        $this->expectException(FailedToRetrieveToken::class);
 
         $this->jwtManager->getToken();
     }

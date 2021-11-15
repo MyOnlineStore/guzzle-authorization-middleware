@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace MyOnlineStore\GuzzleAuthorizationMiddleware\Tests\TokenManager;
 
+use MyOnlineStore\GuzzleAuthorizationMiddleware\Exception\FailedToRetrieveToken;
+use MyOnlineStore\GuzzleAuthorizationMiddleware\Exception\FailedToRetrieveTokenUri;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\Token;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\CachedToken;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\TokenManagerInterface;
@@ -11,6 +13,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
+use Psr\Cache\InvalidArgumentException;
 use Psr\Http\Message\UriInterface;
 
 final class CachedTokenTest extends TestCase
@@ -40,6 +43,13 @@ final class CachedTokenTest extends TestCase
             $this->innerTokenManager = $this->createMock(TokenManagerInterface::class),
             $this->uriProvider = $this->createMock(UriProviderInterface::class)
         );
+    }
+
+    public function testReturnsCachedTokenIfNotExpired(): void
+    {
+        $notExpired = new \DateTimeImmutable();
+        $notExpired = $notExpired->add(new \DateInterval('PT30M'));
+        $token = new Token('token', $notExpired);
 
         $this->uriProvider->expects(self::once())
             ->method('getTokenUri')
@@ -53,13 +63,6 @@ final class CachedTokenTest extends TestCase
             ->method('getItem')
             ->with(\str_replace('\\', '-', CachedToken::class) . '-' . \sha1('token-uri'))
             ->willReturn($this->cacheItem = $this->createMock(CacheItemInterface::class));
-    }
-
-    public function testReturnsCachedTokenIfNotExpired(): void
-    {
-        $notExpired = new \DateTimeImmutable();
-        $notExpired = $notExpired->add(new \DateInterval('PT30M'));
-        $token = new Token('token', $notExpired);
 
         $this->cacheItem->expects(self::once())
             ->method('get')
@@ -76,6 +79,19 @@ final class CachedTokenTest extends TestCase
         $expired = new \DateTimeImmutable();
         $expired = $expired->sub(new \DateInterval('PT30M'));
         $token = new Token('token', $expired);
+
+        $this->uriProvider->expects(self::once())
+            ->method('getTokenUri')
+            ->willReturn($this->tokenUri = $this->createMock(UriInterface::class));
+
+        $this->tokenUri->expects(self::once())
+            ->method('__toString')
+            ->willReturn('token-uri');
+
+        $this->cachePool->expects(self::once())
+            ->method('getItem')
+            ->with(\str_replace('\\', '-', CachedToken::class) . '-' . \sha1('token-uri'))
+            ->willReturn($this->cacheItem = $this->createMock(CacheItemInterface::class));
 
         $this->cacheItem->expects(self::once())
             ->method('get')
@@ -102,6 +118,19 @@ final class CachedTokenTest extends TestCase
 
     public function testQueriesInnerManagerIfTokenNotFoundInCache(): void
     {
+        $this->uriProvider->expects(self::once())
+            ->method('getTokenUri')
+            ->willReturn($this->tokenUri = $this->createMock(UriInterface::class));
+
+        $this->tokenUri->expects(self::once())
+            ->method('__toString')
+            ->willReturn('token-uri');
+
+        $this->cachePool->expects(self::once())
+            ->method('getItem')
+            ->with(\str_replace('\\', '-', CachedToken::class) . '-' . \sha1('token-uri'))
+            ->willReturn($this->cacheItem = $this->createMock(CacheItemInterface::class));
+
         $this->cacheItem->expects(self::once())
             ->method('get')
             ->willReturn(null);
@@ -123,5 +152,39 @@ final class CachedTokenTest extends TestCase
             ->with($this->cacheItem);
 
         self::assertSame($newToken, $this->cachedManager->getToken());
+    }
+
+    public function testWrapsExceptionIfCacheFailed(): void
+    {
+        $this->uriProvider->expects(self::once())
+            ->method('getTokenUri')
+            ->willReturn($this->tokenUri = $this->createMock(UriInterface::class));
+
+        $this->tokenUri->expects(self::once())
+            ->method('__toString')
+            ->willReturn('token-uri');
+
+        $this->cachePool->expects(self::once())
+            ->method('getItem')
+            ->with(\str_replace('\\', '-', CachedToken::class) . '-' . \sha1('token-uri'))
+            ->willThrowException(
+                new class extends \Exception implements InvalidArgumentException {
+                }
+            );
+
+        $this->expectException(FailedToRetrieveToken::class);
+
+        $this->cachedManager->getToken();
+    }
+
+    public function testWrapsExceptionTokenProviderFailed(): void
+    {
+        $this->uriProvider->expects(self::once())
+            ->method('getTokenUri')
+            ->willThrowException(FailedToRetrieveTokenUri::dueTo('Gone'));
+
+        $this->expectException(FailedToRetrieveToken::class);
+
+        $this->cachedManager->getToken();
     }
 }
