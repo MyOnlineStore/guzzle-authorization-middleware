@@ -6,6 +6,7 @@ namespace MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\GuzzleException;
 use Lcobucci\JWT\Parser;
+use Lcobucci\JWT\UnencryptedToken;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\Exception\FailedToRetrieveToken;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\Exception\FailedToRetrieveTokenUri;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\Token;
@@ -15,32 +16,15 @@ use Psr\Log\NullLogger;
 
 final class Jwt implements TokenManagerInterface
 {
-    /** @var ClientInterface */
-    private $httpClient;
-
-    /** @var Parser */
-    private $jwtParser;
-
-    /** @var LoggerInterface */
-    private $logger;
-
-    /** @var RequestFactoryInterface */
-    private $requestFactory;
-
-    /** @var UriProviderInterface */
-    private $uriProvider;
+    private LoggerInterface $logger;
 
     public function __construct(
-        ClientInterface $httpClient,
-        Parser $jwtParser,
-        RequestFactoryInterface $requestFactory,
-        UriProviderInterface $uriProvider,
+        private ClientInterface $httpClient,
+        private Parser $jwtParser,
+        private RequestFactoryInterface $requestFactory,
+        private UriProviderInterface $uriProvider,
         ?LoggerInterface $logger = null
     ) {
-        $this->httpClient = $httpClient;
-        $this->requestFactory = $requestFactory;
-        $this->uriProvider = $uriProvider;
-        $this->jwtParser = $jwtParser;
         $this->logger = $logger ?? new NullLogger();
     }
 
@@ -72,7 +56,10 @@ final class Jwt implements TokenManagerInterface
         }
 
         try {
-            $expiration = $this->jwtParser->parse($token)->claims()->get('exp');
+            $parsedToken = $this->jwtParser->parse($token);
+            \assert($parsedToken instanceof UnencryptedToken);
+
+            $expiration = $parsedToken->claims()->get('exp');
         } catch (\RuntimeException $exception) {
             throw FailedToRetrieveToken::dueTo('Unable to parse token', $exception);
         }

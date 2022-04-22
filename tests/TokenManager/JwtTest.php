@@ -6,8 +6,8 @@ namespace MyOnlineStore\GuzzleAuthorizationMiddleware\Tests\TokenManager;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\TransferException;
 use Lcobucci\JWT\Parser;
-use Lcobucci\JWT\Token as JwtToken;
 use Lcobucci\JWT\Token\DataSet;
+use Lcobucci\JWT\UnencryptedToken;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\Exception\FailedToRetrieveToken;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\Token;
 use MyOnlineStore\GuzzleAuthorizationMiddleware\TokenManager\Jwt;
@@ -24,22 +24,21 @@ use Psr\Log\LoggerInterface;
 final class JwtTest extends TestCase
 {
     /** @var ClientInterface&MockObject */
-    private $httpClient;
+    private ClientInterface $httpClient;
 
-    /** @var Jwt */
-    private $jwtManager;
+    private Jwt $jwtManager;
 
     /** @var Parser&MockObject */
-    private $jwtParser;
+    private Parser $jwtParser;
 
     /** @var LoggerInterface&MockObject */
-    private $logger;
+    private LoggerInterface $logger;
 
     /** @var RequestFactoryInterface&MockObject */
-    private $requestFactory;
+    private RequestFactoryInterface $requestFactory;
 
     /** @var UriProviderInterface&MockObject */
-    private $uriProvider;
+    private UriProviderInterface $uriProvider;
 
     protected function setUp(): void
     {
@@ -79,7 +78,7 @@ final class JwtTest extends TestCase
         $this->jwtParser->expects(self::once())
             ->method('parse')
             ->with('access-token')
-            ->willReturn($jwtToken = $this->createMock(JwtToken::class));
+            ->willReturn($jwtToken = $this->createMock(UnencryptedToken::class));
 
         $jwtToken->expects(self::once())
             ->method('claims')
@@ -115,7 +114,7 @@ final class JwtTest extends TestCase
         $this->jwtParser->expects(self::once())
             ->method('parse')
             ->with('access-token')
-            ->willReturn($jwtToken = $this->createMock(JwtToken::class));
+            ->willReturn($jwtToken = $this->createMock(UnencryptedToken::class));
 
         $jwtToken->expects(self::once())
             ->method('claims')

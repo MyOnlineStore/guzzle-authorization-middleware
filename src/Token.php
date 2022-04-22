@@ -8,16 +8,10 @@ namespace MyOnlineStore\GuzzleAuthorizationMiddleware;
  */
 final class Token
 {
-    /** @var string */
-    private $token;
-
-    /** @var \DateTimeImmutable */
-    private $expiresAt;
-
-    public function __construct(string $token, \DateTimeImmutable $expiresAt)
-    {
-        $this->token = $token;
-        $this->expiresAt = $expiresAt;
+    public function __construct(
+        private string $token,
+        private \DateTimeImmutable $expiresAt
+    ) {
     }
 
     public function getToken(): string
@@ -32,7 +26,7 @@ final class Token
 
     public function isExpired(): bool
     {
-        return (new \DateTimeImmutable()) > $this->expiresAt;
+        return (new \DateTimeImmutable()) >= $this->expiresAt;
     }
 
     public function toString(): string

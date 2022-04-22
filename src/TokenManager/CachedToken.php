@@ -11,23 +11,11 @@ use Psr\Cache\InvalidArgumentException;
 
 final class CachedToken implements TokenManagerInterface
 {
-    /** @var CacheItemPoolInterface */
-    private $cachePool;
-
-    /** @var TokenManagerInterface */
-    private $innerTokenManager;
-
-    /** @var UriProviderInterface */
-    private $uriProvider;
-
     public function __construct(
-        CacheItemPoolInterface $cachePool,
-        TokenManagerInterface $innerTokenManager,
-        UriProviderInterface $uriProvider
+        private CacheItemPoolInterface $cachePool,
+        private TokenManagerInterface $innerTokenManager,
+        private UriProviderInterface $uriProvider
     ) {
-        $this->cachePool = $cachePool;
-        $this->innerTokenManager = $innerTokenManager;
-        $this->uriProvider = $uriProvider;
     }
 
     /**
@@ -35,7 +23,6 @@ final class CachedToken implements TokenManagerInterface
      */
     public function getToken(): Token
     {
-        /** @psalm-suppress InvalidCatch */
         try {
             $item = $this->cachePool->getItem(
                 \sprintf(

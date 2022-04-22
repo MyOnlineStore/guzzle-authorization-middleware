@@ -11,15 +11,12 @@ use Psr\Log\NullLogger;
 
 final class BearerAuthorization
 {
-    /** @var LoggerInterface */
-    private $logger;
+    private LoggerInterface $logger;
 
-    /** @var TokenManagerInterface */
-    private $tokenManager;
-
-    public function __construct(TokenManagerInterface $tokenManager, ?LoggerInterface $logger = null)
-    {
-        $this->tokenManager = $tokenManager;
+    public function __construct(
+        private TokenManagerInterface $tokenManager,
+        ?LoggerInterface $logger = null
+    ) {
         $this->logger = $logger ?? new NullLogger();
     }
 
